@@ -1,0 +1,5 @@
+{
+  "name": "FullBlownAinz (FBA)",
+  "description": "A production-ready, mobile-first, static web app for GitHub Pages. Dynamic content is managed via Supabase, featuring a unique 'hatch' UI for content reveal, and a complete frontend admin system for content management.",
+  "requestFramePermissions": []
+}
