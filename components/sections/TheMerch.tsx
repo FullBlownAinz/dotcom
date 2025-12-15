@@ -4,6 +4,7 @@ import RichTextViewer from '../ui/RichTextViewer.tsx';
 import { MerchItem } from '../../types/index.ts';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Portal from '../ui/Portal.tsx';
+import LoadingImage from '../ui/LoadingImage.tsx';
 
 interface MerchCardProps {
     item: MerchItem;
@@ -73,9 +74,24 @@ const MerchCard: React.FC<MerchCardProps> = ({ item }) => {
                     onTouchEnd={handleTouchEnd}
                     onClick={() => setIsLightboxOpen(true)}
                 >
-                    <img src={images[currentImgIdx]} alt={item.name} className="w-full h-full object-cover transition-opacity duration-300" />
+                    {/* Slider Container */}
+                    <div 
+                        className="flex h-full w-full transition-transform duration-300 ease-out"
+                        style={{ transform: `translateX(-${currentImgIdx * 100}%)` }}
+                    >
+                        {images.map((img, idx) => (
+                            <LoadingImage 
+                                key={idx} 
+                                src={img} 
+                                alt={`${item.name} ${idx + 1}`}
+                                containerClassName="w-full h-full flex-shrink-0"
+                                className="w-full h-full object-cover"
+                                draggable={false}
+                            />
+                        ))}
+                    </div>
                     
-                    {/* Navigation Arrows (Always Visible) */}
+                    {/* Navigation Arrows (Always Visible if > 1) */}
                     {images.length > 1 && (
                         <>
                             <button 
@@ -96,9 +112,9 @@ const MerchCard: React.FC<MerchCardProps> = ({ item }) => {
                             </button>
                             
                             {/* Mobile Indicator Dots */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 md:hidden">
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 md:hidden z-10">
                                 {images.map((_, idx) => (
-                                    <div key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentImgIdx ? 'bg-fba-red' : 'bg-white/50'}`} />
+                                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentImgIdx ? 'bg-fba-red' : 'bg-white/50'}`} />
                                 ))}
                             </div>
                         </>
@@ -107,9 +123,11 @@ const MerchCard: React.FC<MerchCardProps> = ({ item }) => {
 
                 <div className="p-4 flex-grow flex flex-col">
                     <h2 className="font-display uppercase text-lg">{item.name}</h2>
-                    <p className="font-mono text-fba-red text-xl my-2">
-                        ${(item.price_cents / 100).toFixed(2)} {item.currency}
-                    </p>
+                    {!item.hide_price && (
+                        <p className="font-mono text-fba-red text-xl my-2">
+                            ${(item.price_cents / 100).toFixed(2)} {item.currency}
+                        </p>
+                    )}
                     
                     {!isDescriptionEmpty && (
                         <div className="flex-grow mb-4 text-sm text-gray-400">
@@ -133,9 +151,10 @@ const MerchCard: React.FC<MerchCardProps> = ({ item }) => {
                             setIsLightboxOpen(false);
                         }}
                     >
-                        <img 
+                        <LoadingImage 
                             src={images[currentImgIdx]} 
                             alt={item.name} 
+                            containerClassName="max-w-full max-h-screen"
                             className="w-full h-auto max-h-screen object-contain shadow-2xl"
                         />
                     </div>

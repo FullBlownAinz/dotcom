@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Portal from './Portal.tsx';
 import { X } from 'lucide-react';
 import { SiteSettings } from '../../types/index.ts';
+import LoadingImage from './LoadingImage.tsx';
 
 interface PromoPopupProps {
     settings?: SiteSettings['promo'];
@@ -48,16 +49,18 @@ const PromoPopup: React.FC<PromoPopupProps> = ({ settings }) => {
                                 rel="noopener noreferrer"
                                 className="w-full h-full flex items-center justify-center"
                             >
-                                <img 
+                                <LoadingImage 
                                     src={settings.image_url} 
                                     alt="Promo" 
+                                    containerClassName="w-full h-full flex items-center justify-center"
                                     className="max-w-full max-h-full object-contain drop-shadow-2xl" 
                                 />
                             </a>
                         ) : (
-                            <img 
+                            <LoadingImage 
                                 src={settings.image_url} 
                                 alt="Promo" 
+                                containerClassName="w-full h-full flex items-center justify-center"
                                 className="max-w-full max-h-full object-contain drop-shadow-2xl" 
                             />
                         )}

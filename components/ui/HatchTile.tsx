@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Post } from '../../types/index.ts';
+import LoadingImage from './LoadingImage.tsx';
 
 interface HatchTileProps {
   item: Post;
@@ -41,7 +42,7 @@ export const HatchTile: React.FC<HatchTileProps> = ({ item, children, isOpen, on
   }, [isOpen]);
 
   const renderHeaderMedia = () => {
-    const commonClasses = `absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 ease-in-out`;
+    const commonClasses = `w-full h-full object-cover transition-transform duration-500 ease-in-out`;
     
     // A 33.33% translate on a 100% height object means the middle third is shown.
     const openTransform = `scale(1.05) -translate-y-[33.33%]`; 
@@ -51,9 +52,10 @@ export const HatchTile: React.FC<HatchTileProps> = ({ item, children, isOpen, on
       case 'image':
       case 'gif':
         return (
-          <img 
+          <LoadingImage 
             src={item.header_media_url} 
             alt="Post header" 
+            containerClassName="absolute top-0 left-0 w-full h-full"
             className={`${commonClasses} ${isOpen ? openTransform : closedTransform}`}
           />
         );
@@ -62,7 +64,7 @@ export const HatchTile: React.FC<HatchTileProps> = ({ item, children, isOpen, on
           <video 
             ref={videoRef}
             src={item.header_media_url} 
-            className={`${commonClasses} ${isOpen ? openTransform : closedTransform}`}
+            className={`absolute top-0 left-0 ${commonClasses} ${isOpen ? openTransform : closedTransform}`}
             loop 
             muted 
             playsInline

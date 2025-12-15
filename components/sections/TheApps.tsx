@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAdmin } from '../../hooks/useAdmin.ts';
+import LoadingImage from '../ui/LoadingImage.tsx';
 
 const TheApps = () => {
     const { apps, loading } = useAdmin();
@@ -16,7 +17,12 @@ const TheApps = () => {
             <div className="space-y-8 max-w-2xl mx-auto">
                 {liveApps.map(app => (
                     <div key={app.id} id={app.id} className="flex items-start gap-6 bg-[#0A0A0A] p-6 border border-gray-800">
-                        <img src={app.icon_url} alt={`${app.name} icon`} className="w-16 h-16 sm:w-24 sm:h-24 object-cover flex-shrink-0" />
+                        <LoadingImage 
+                            src={app.icon_url} 
+                            alt={`${app.name} icon`} 
+                            containerClassName="w-16 h-16 sm:w-24 sm:h-24 flex-shrink-0"
+                            className="w-full h-full object-cover" 
+                        />
                         <div className="flex-grow">
                             <h2 className="font-display uppercase text-xl">{app.name}</h2>
                             <p className="text-gray-400 my-2 text-sm">{app.short_desc}</p>

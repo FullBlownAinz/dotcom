@@ -9,6 +9,7 @@ import QuillEditor from '../ui/QuillEditor.tsx';
 import { toSquareDataURL } from '../../src/edit/imageSquare.ts';
 import { uploadFile } from '../../utils/storage.ts';
 import { useAdmin } from '../../hooks/useAdmin.ts';
+import LoadingImage from '../ui/LoadingImage.tsx';
 
 interface EditMerchModalProps {
   merch: MerchItem | null;
@@ -169,10 +170,15 @@ const EditMerchModal: React.FC<EditMerchModalProps> = ({ merch, onClose, onSave 
                   <div className="flex flex-wrap gap-4 mb-2">
                       {images.map((url, idx) => (
                           <div key={idx} className="relative group w-24 h-24 border border-gray-700">
-                              <img src={url} alt="Merch thumb" className="w-full h-full object-cover" />
+                              <LoadingImage 
+                                src={url} 
+                                alt="Merch thumb" 
+                                containerClassName="w-full h-full"
+                                className="w-full h-full object-cover" 
+                              />
                               <button 
                                 onClick={() => removeImage(idx)}
-                                className="absolute top-0 right-0 bg-red-600 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-0 right-0 bg-red-600 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                               >
                                   <Trash2 size={12} />
                               </button>
@@ -192,6 +198,19 @@ const EditMerchModal: React.FC<EditMerchModalProps> = ({ merch, onClose, onSave 
               </div>
 
               <Input id="price" name="price" label={`Price (${editedMerch.currency})`} value={price} onChange={(e) => setPrice(e.target.value)} type="number" step="0.01" />
+
+              <div className="flex items-center gap-4 py-2 mb-2">
+                  <input
+                      type="checkbox"
+                      id="hide_price"
+                      name="hide_price"
+                      checked={!!editedMerch.hide_price}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 accent-fba-red"
+                  />
+                  <label htmlFor="hide_price" className="font-display uppercase text-sm cursor-pointer select-none">Hide Price</label>
+              </div>
+
               <Input id="external_url" name="external_url" label="External URL" value={editedMerch.external_url} onChange={handleInputChange} />
               
               {/* New Button Text Input */}

@@ -40,6 +40,7 @@ export interface MerchItem {
     button_text?: string; // New: Custom button text
     hidden: boolean;
     order_index: number;
+    hide_price?: boolean;
 }
 
 export interface AppItem {

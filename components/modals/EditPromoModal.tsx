@@ -5,6 +5,7 @@ import Button from '../ui/Button.tsx';
 import FilePicker from '../ui/FilePicker.tsx';
 import { X } from 'lucide-react';
 import { SiteSettings } from '../../types/index.ts';
+import LoadingImage from '../ui/LoadingImage.tsx';
 
 interface EditPromoModalProps {
     settings: SiteSettings['promo'];
@@ -67,7 +68,12 @@ const EditPromoModal: React.FC<EditPromoModalProps> = ({ settings, onClose, onSa
                         />
                         {imageUrl && (
                             <div className="aspect-video w-full border border-gray-700 bg-black flex items-center justify-center overflow-hidden flex-shrink-0">
-                                <img src={imageUrl} alt="Promo preview" className="max-h-full max-w-full object-contain" />
+                                <LoadingImage 
+                                    src={imageUrl} 
+                                    alt="Promo preview" 
+                                    containerClassName="w-full h-full flex items-center justify-center"
+                                    className="max-h-full max-w-full object-contain" 
+                                />
                             </div>
                         )}
 
