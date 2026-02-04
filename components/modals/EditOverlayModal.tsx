@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Portal from '../ui/Portal.tsx';
 import Button from '../ui/Button.tsx';
@@ -12,7 +13,7 @@ interface EditOverlayModalProps {
 
 const EditOverlayModal: React.FC<EditOverlayModalProps> = ({ settings, onClose, onSave }) => {
     const [enabled, setEnabled] = useState(settings?.enabled || false);
-    const [type, setType] = useState<'snow' | 'leaves' | 'confetti'>(settings?.type || 'snow');
+    const [type, setType] = useState<'snow' | 'leaves' | 'confetti' | 'broken-hearts'>(settings?.type || 'snow');
 
     const handleSave = () => {
         onSave({ enabled, type });
@@ -52,27 +53,34 @@ const EditOverlayModal: React.FC<EditOverlayModalProps> = ({ settings, onClose, 
 
                         <div>
                             <label className="font-display text-sm text-gray-400 mb-2 block">Effect Type</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setType('snow')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'snow' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
+                                    className={`p-3 border text-center uppercase text-[10px] font-bold transition-colors ${type === 'snow' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
                                 >
                                     Snow
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType('leaves')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'leaves' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
+                                    className={`p-3 border text-center uppercase text-[10px] font-bold transition-colors ${type === 'leaves' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
                                 >
                                     Leaves
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setType('confetti')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'confetti' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
+                                    className={`p-3 border text-center uppercase text-[10px] font-bold transition-colors ${type === 'confetti' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
                                 >
                                     Confetti
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setType('broken-hearts')}
+                                    className={`p-3 border text-center uppercase text-[10px] font-bold transition-colors ${type === 'broken-hearts' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
+                                >
+                                    Broken Hearts
                                 </button>
                             </div>
                         </div>

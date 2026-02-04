@@ -1,3 +1,4 @@
+
 // FIX: Removed self-imports that caused declaration conflicts.
 export interface RichTextBlock {
     type: 'heading' | 'paragraph' | 'list' | 'image' | 'video' | 'embed' | 'quill-delta';
@@ -80,7 +81,7 @@ export interface SiteSettings {
     };
     overlay_animation?: {
         enabled: boolean;
-        type: 'snow' | 'leaves' | 'confetti';
+        type: 'snow' | 'leaves' | 'confetti' | 'broken-hearts';
     };
     header_overlay_url: string | null;
     density: 'S' | 'M' | 'L';
