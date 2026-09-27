@@ -1,0 +1,13 @@
+# Dependencies and generated output
+node_modules/
+dist/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+.netlify/
+
+# Logs and editor files
+*.log
+.DS_Store
