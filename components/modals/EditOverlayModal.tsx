@@ -12,10 +12,12 @@ interface EditOverlayModalProps {
 
 const EditOverlayModal: React.FC<EditOverlayModalProps> = ({ settings, onClose, onSave }) => {
     const [enabled, setEnabled] = useState(settings?.enabled || false);
-    const [type, setType] = useState<'snow' | 'leaves' | 'confetti'>(settings?.type || 'snow');
+    const [type, setType] = useState<NonNullable<SiteSettings['overlay_animation']>['type']>(settings?.type || 'snow');
+    const [speed, setSpeed] = useState(settings?.speed ?? 3);
+    const [density, setDensity] = useState(settings?.density ?? 3);
 
     const handleSave = () => {
-        onSave({ enabled, type });
+        onSave({ enabled, type, speed, density });
         onClose();
     };
 
@@ -52,30 +54,13 @@ const EditOverlayModal: React.FC<EditOverlayModalProps> = ({ settings, onClose, 
 
                         <div>
                             <label className="font-display text-sm text-gray-400 mb-2 block">Effect Type</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setType('snow')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'snow' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
-                                >
-                                    Snow
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setType('leaves')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'leaves' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
-                                >
-                                    Leaves
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setType('confetti')}
-                                    className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === 'confetti' ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}
-                                >
-                                    Confetti
-                                </button>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {(['snow', 'leaves', 'confetti', 'rain', 'fireworks', 'sparkles'] as const).map(effect => <button key={effect} type="button" onClick={() => setType(effect)} className={`p-3 border text-center uppercase text-xs font-bold transition-colors ${type === effect ? 'bg-fba-red text-white border-fba-red' : 'bg-black border-gray-700 text-gray-400 hover:border-gray-500'}`}>{effect}</button>)}
                             </div>
                         </div>
+
+                        <div><label htmlFor="overlay-speed" className="mb-2 flex justify-between font-display text-xs uppercase text-gray-400"><span>Speed</span><span>{speed}/5</span></label><input id="overlay-speed" type="range" min="1" max="5" step="1" value={speed} onChange={e => setSpeed(Number(e.target.value))} className="w-full accent-fba-red" /></div>
+                        <div><label htmlFor="overlay-density" className="mb-2 flex justify-between font-display text-xs uppercase text-gray-400"><span>{type === 'fireworks' ? 'Frequency' : 'Density'}</span><span>{density}/5</span></label><input id="overlay-density" type="range" min="1" max="5" step="1" value={density} onChange={e => setDensity(Number(e.target.value))} className="w-full accent-fba-red" /></div>
 
                         <p className="text-xs text-gray-500">
                             This animation will appear over the entire site. Interactions underneath will still work.

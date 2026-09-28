@@ -53,10 +53,21 @@ function App() {
   }, []);
 
   const scrollToSection = (id: string) => {
+    const container = mainContainerRef.current;
     const sectionEl = sectionRefs.current[id];
-    if (sectionEl) {
-      sectionEl.scrollIntoView({ behavior: 'smooth' });
+    if (container && sectionEl) {
+      window.dispatchEvent(new CustomEvent('fba:navigate', { detail: { sectionId: id } }));
+      container.scrollTo({
+        top: sectionEl.offsetTop - container.offsetTop,
+        behavior: 'smooth',
+      });
     }
+  };
+
+  const scrollHome = () => {
+    window.dispatchEvent(new CustomEvent('fba:navigate', { detail: { sectionId: sections[0].id } }));
+    mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveSection(sections[0].id);
   };
 
   useEffect(() => {
@@ -64,6 +75,19 @@ function App() {
     container?.addEventListener('scroll', handleScroll);
     return () => container?.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('fba:active-section', { detail: { sectionId: activeSection } }));
+  }, [activeSection]);
+
+  useEffect(() => {
+    const handleSectionRequest = (event: Event) => {
+      const sectionId = (event as CustomEvent<{ sectionId: string }>).detail?.sectionId;
+      if (sectionId) scrollToSection(sectionId);
+    };
+    window.addEventListener('fba:request-section', handleSectionRequest);
+    return () => window.removeEventListener('fba:request-section', handleSectionRequest);
+  }, []);
 
   // Keyboard navigation
   useEffect(() => {
@@ -81,9 +105,9 @@ function App() {
   return (
     <div className={`font-base bg-fba-black text-fba-white w-screen h-screen flex flex-col transition-colors duration-300`}>
       <OverlayAnimation settings={settings?.overlay_animation} />
-      <Header />
+      <Header onHome={scrollHome} />
       {settings?.fonts.ticker && <Ticker text={settings.fonts.ticker} speed={settings.fonts.tickerSpeed} />}
-      <div className="flex-grow grid grid-cols-[auto_1fr] overflow-hidden">
+      <div className="flex-grow relative overflow-hidden">
         <DotNav sections={sections} activeSection={activeSection} onNavigate={scrollToSection} />
         <main 
             ref={mainContainerRef}
@@ -96,7 +120,7 @@ function App() {
               ref={(el) => {
                 if(el) sectionRefs.current[section.id] = el
               }}
-              className="w-full h-full flex-shrink-0 snap-start flex items-center justify-center relative"
+              className="mobile-content-offset w-full h-full flex-shrink-0 snap-start flex items-center justify-center relative"
             >
               {section.component}
             </section>

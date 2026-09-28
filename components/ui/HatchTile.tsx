@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import { Post } from '../../types/index.ts';
 import LoadingImage from './LoadingImage.tsx';
 
@@ -12,96 +13,53 @@ interface HatchTileProps {
 export const HatchTile: React.FC<HatchTileProps> = ({ item, children, isOpen, onToggle }) => {
   const articleRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    if (isOpen && articleRef.current) {
-      // The animations for opening/closing have a 500ms duration.
-      // We wait slightly longer than that to ensure the layout is stable before scrolling.
-      const timer = setTimeout(() => {
-        articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 550);
-      return () => clearTimeout(timer);
+    let timer: number;
+    let finishTimer: number;
+    if (isOpen) {
+      setIsAnimating(true);
+      setIsFlipped(true);
+      timer = window.setTimeout(() => setIsExpanded(true), 420);
+      finishTimer = window.setTimeout(() => setIsAnimating(false), 900);
+    } else {
+      setIsExpanded(false);
+      timer = window.setTimeout(() => {
+        setIsAnimating(true);
+        setIsFlipped(false);
+      }, 420);
+      finishTimer = window.setTimeout(() => setIsAnimating(false), 1000);
     }
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(finishTimer);
+    };
   }, [isOpen]);
 
-  // Effect to control video playback based on the tile's open state.
   useEffect(() => {
-    if (videoRef.current) {
-      if (isOpen) {
-        // Play the video when the tile is open.
-        videoRef.current.play().catch(error => {
-          // Log a warning if autoplay is prevented by the browser.
-          console.warn('Video autoplay prevented:', error);
-        });
-      } else {
-        // Pause and rewind the video when the tile is closed.
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-      }
-    }
+    if (!videoRef.current) return;
+    if (isOpen) videoRef.current.pause();
+    else videoRef.current.play().catch(() => undefined);
   }, [isOpen]);
 
-  const renderHeaderMedia = () => {
-    const commonClasses = `w-full h-full object-cover transition-transform duration-500 ease-in-out`;
-    
-    // A 33.33% translate on a 100% height object means the middle third is shown.
-    const openTransform = `scale(1.05) -translate-y-[33.33%]`; 
-    const closedTransform = 'scale(1) translate-y-0';
-
-    switch (item.header_media_type) {
-      case 'image':
-      case 'gif':
-        return (
-          <LoadingImage 
-            src={item.header_media_url} 
-            alt="Post header" 
-            containerClassName="absolute top-0 left-0 w-full h-full"
-            className={`${commonClasses} ${isOpen ? openTransform : closedTransform}`}
-          />
-        );
-      case 'video':
-        return (
-          <video 
-            ref={videoRef}
-            src={item.header_media_url} 
-            className={`absolute top-0 left-0 ${commonClasses} ${isOpen ? openTransform : closedTransform}`}
-            loop 
-            muted 
-            playsInline
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  const media = item.header_media_type === 'video' ? (
+    <video ref={videoRef} src={item.header_media_url} className="h-full w-full object-cover" loop muted playsInline autoPlay preload="auto" />
+  ) : (
+    <LoadingImage src={item.header_media_url} alt={item.title || 'Post header'} containerClassName="h-full w-full" className="h-full w-full object-cover" />
+  );
 
   return (
-    <article ref={articleRef} className="mb-8 bg-[#0A0A0A] border border-gray-800 overflow-hidden max-w-xl mx-auto">
-      {/* Header container that masks the image */}
-      <div 
-        className={`relative w-full overflow-hidden cursor-pointer transition-all duration-500 ease-in-out ${isOpen ? 'h-32' : 'aspect-square'}`}
-        onClick={onToggle}
-        role="button"
-        aria-expanded={isOpen}
-        aria-label={isOpen ? 'Collapse post' : 'Expand post'}
-      >
-        {renderHeaderMedia()}
-      </div>
-
-      {/* Content container that animates using max-height */}
-      <div 
-        className="transition-[max-height] duration-500 ease-in-out overflow-hidden"
-        style={{ maxHeight: isOpen ? 'calc(100vh - 14rem)' : '0px' }}
-      >
-        {/* This inner div has a fixed height and handles internal scrolling */}
-        <div 
-          className="p-4 md:p-6 bg-fba-red hatch-inner-shadow text-fba-white overflow-y-auto flex items-center justify-center custom-scrollbar"
-          style={{ height: 'calc(100vh - 14rem)'}}
-        >
-          {/* Inner Content Box: Black background, No Outline, Full Width Content */}
-          <div className="w-full bg-black py-6 shadow-none [&_.ql-container.ql-snow]:!border-none">
-            {children}
-          </div>
+    <article ref={articleRef} className={`flip-card mx-auto mb-8 w-full max-w-xl ${isFlipped ? 'is-flipped' : ''} ${isExpanded ? 'is-expanded' : ''} ${isAnimating ? 'is-animating' : ''}`}>
+      <div className="flip-card-inner">
+        <div className="flip-card-face flip-card-front cursor-pointer overflow-hidden border border-gray-800 bg-[#0A0A0A] text-left" onClick={onToggle} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onToggle(); } }} role="button" tabIndex={0} aria-expanded={isOpen} aria-label={`Open ${item.title || 'post'}`}>
+          {media}
+        </div>
+        <div className="flip-card-face flip-card-back border border-fba-red bg-black text-fba-white">
+          <button type="button" onClick={onToggle} className="absolute right-2 top-2 z-10 rounded-full bg-black/80 p-2 text-white hover:text-fba-red" aria-label="Close post"><X size={20} /></button>
+          <div className="h-full overflow-y-auto custom-scrollbar p-4 pt-12 [&_.ql-container.ql-snow]:!border-none">{children}</div>
         </div>
       </div>
     </article>

@@ -1,11 +1,12 @@
 // FIX: Removed self-imports that caused declaration conflicts.
 export interface RichTextBlock {
-    type: 'heading' | 'paragraph' | 'list' | 'image' | 'video' | 'embed' | 'quill-delta';
+    type: 'heading' | 'paragraph' | 'list' | 'image' | 'linked-image' | 'video' | 'embed' | 'quill-delta';
     level?: 1 | 2 | 3;
     content?: string;
     items?: string[];
     src?: string;
     alt?: string;
+    url?: string;
     delta?: any; // For Quill's Delta object
 }
 
@@ -58,6 +59,7 @@ export interface AppItem {
 export interface SiteInfo {
     id: boolean;
     body_richtext: RichTextBlock[];
+    display_mode?: 'html' | 'images';
 }
 
 export interface SiteSettings {
@@ -80,7 +82,9 @@ export interface SiteSettings {
     };
     overlay_animation?: {
         enabled: boolean;
-        type: 'snow' | 'leaves' | 'confetti';
+        type: 'snow' | 'leaves' | 'confetti' | 'rain' | 'fireworks' | 'sparkles';
+        speed?: number;
+        density?: number;
     };
     header_overlay_url: string | null;
     density: 'S' | 'M' | 'L';
