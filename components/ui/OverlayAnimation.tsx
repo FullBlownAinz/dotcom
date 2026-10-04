@@ -1,77 +1,167 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { SiteSettings } from '../../types/index.ts';
 
 interface OverlayAnimationProps { settings?: SiteSettings['overlay_animation']; }
-interface Particle { x: number; y: number; radius: number; color: string; speedX: number; speedY: number; rotation: number; rotationSpeed: number; life?: number; maxLife?: number; }
+type ParticleStyle = React.CSSProperties & Record<`--${string}`, string | number>;
 
-const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#ffffff', '#e10600'];
+const palette = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#ffffff', '#e10600'];
+const leafPalette = ['#e9c46a', '#f4a261', '#e76f51', '#2a9d8f'];
 
-const createParticle = (w: number, h: number, type: string, speed: number, top = false): Particle => {
-  const factor = .35 + speed * .2;
-  const x = Math.random() * w;
-  const y = top ? -20 : Math.random() * h;
-  if (type === 'rain') return { x, y, radius: 1, color: 'rgba(160,205,255,.65)', speedY: (8 + Math.random() * 8) * factor, speedX: -1, rotation: 0, rotationSpeed: 0 };
-  if (type === 'sparkles') return { x, y, radius: 1 + Math.random() * 2, color: '#fff', speedY: 0, speedX: 0, rotation: Math.random() * Math.PI, rotationSpeed: .03 * factor, life: Math.random() * 100, maxLife: 100 };
-  if (type === 'leaves') return { x, y, radius: 3 + Math.random() * 3, color: ['#e9c46a','#f4a261','#e76f51','#2a9d8f'][Math.floor(Math.random()*4)], speedY: (1 + Math.random()*1.5)*factor, speedX: Math.random(), rotation: Math.random()*Math.PI*2, rotationSpeed: Math.random()*.05-.025 };
-  if (type === 'confetti') return { x, y, radius: 2 + Math.random()*2, color: colors[Math.floor(Math.random()*colors.length)], speedY: (2 + Math.random()*3)*factor, speedX: Math.random()*2, rotation: Math.random()*Math.PI*2, rotationSpeed: Math.random()*.1 };
-  return { x, y, radius: 1 + Math.random()*2, color: `rgba(255,255,255,${.3+Math.random()*.5})`, speedY: (.5+Math.random())*factor, speedX: Math.random()*.5, rotation: Math.random()*Math.PI*2, rotationSpeed: Math.random()*.02 };
+const random = (seed: number) => {
+  const value = Math.sin(seed * 999.91) * 43758.5453;
+  return value - Math.floor(value);
 };
 
 const OverlayAnimation: React.FC<OverlayAnimationProps> = ({ settings }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !settings?.enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let frame = 0;
-    let raf = 0;
-    let particles: Particle[] = [];
-    const speed = settings.speed ?? 3;
-    const density = settings.density ?? 3;
-    const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
-    const reset = () => {
-      const count = Math.round((innerWidth < 768 ? 10 : 20) * density);
-      particles = settings.type === 'fireworks' ? [] : Array.from({ length: count }, () => createParticle(canvas.width, canvas.height, settings.type, speed));
-    };
-    const burst = () => {
-      const cx = canvas.width * (.15 + Math.random() * .7), cy = canvas.height * (.1 + Math.random() * .5);
-      const count = 14 + density * 7;
-      for (let i=0; i<count; i++) {
-        const a = Math.PI * 2 * i / count, velocity = (1.5 + Math.random()*3) * (.5 + speed*.16);
-        particles.push({ x:cx, y:cy, radius:1.5, color:colors[Math.floor(Math.random()*colors.length)], speedX:Math.cos(a)*velocity, speedY:Math.sin(a)*velocity, rotation:0, rotationSpeed:0, life:0, maxLife:45+speed*8 });
+  const enabled = settings?.enabled ?? false;
+  const type = settings?.type ?? 'snow';
+  const speed = settings?.speed ?? 3;
+  const density = settings?.density ?? 3;
+
+  const particles = useMemo(() => {
+    if (!enabled) return [];
+    const isFireworks = type === 'fireworks';
+    const count = isFireworks ? Math.max(24, density * 18) : Math.max(10, density * 14);
+    const velocity = .55 + speed * .16;
+
+    return Array.from({ length: count }, (_, index) => {
+      const r1 = random(index + 1);
+      const r2 = random(index + 101);
+      const r3 = random(index + 211);
+      const r4 = random(index + 307);
+      const r5 = random(index + 401);
+      let className = `overlay-particle overlay-${type}`;
+      const style: ParticleStyle = {
+        left: `${r1 * 100}%`,
+        animationDelay: `${-r2 * (8 / velocity)}s`,
+      };
+
+      if (isFireworks) {
+        const burstSize = Math.max(12, density * 6);
+        const burstIndex = Math.floor(index / burstSize);
+        const particleIndex = index % burstSize;
+        const angle = (Math.PI * 2 * particleIndex) / burstSize;
+        const distance = 45 + r3 * 95;
+        style.left = `${15 + random(burstIndex + 33) * 70}%`;
+        style.top = `${12 + random(burstIndex + 71) * 45}%`;
+        style['--burst-x'] = `${Math.cos(angle) * distance}px`;
+        style['--burst-y'] = `${Math.sin(angle) * distance}px`;
+        style['--particle-color'] = palette[Math.floor(r4 * palette.length)];
+        style.animationDuration = `${Math.max(2.8, 7.2 / velocity)}s`;
+        style.animationDelay = `${-(burstIndex * 1.35 + r5 * 2)}s`;
+      } else if (type === 'sparkles') {
+        style.top = `${r2 * 100}%`;
+        style['--particle-size'] = `${2 + r3 * 3}px`;
+        style.animationDuration = `${Math.max(.7, 2.8 / velocity)}s`;
+      } else {
+        style['--drift'] = `${(r3 - .5) * (type === 'rain' ? 45 : 140)}px`;
+        style['--particle-size'] = `${type === 'leaves' ? 6 + r4 * 7 : type === 'confetti' ? 4 + r4 * 5 : 2 + r4 * 4}px`;
+        style['--particle-color'] = type === 'leaves'
+          ? leafPalette[Math.floor(r5 * leafPalette.length)]
+          : type === 'confetti'
+            ? palette[Math.floor(r5 * palette.length)]
+            : `rgba(255,255,255,${.3 + r5 * .55})`;
+        const baseDuration = type === 'rain' ? 2.2 : type === 'confetti' ? 5.5 : type === 'leaves' ? 7.5 : 9;
+        style.animationDuration = `${baseDuration / velocity}s`;
       }
-    };
-    const animate = () => {
-      ctx.clearRect(0,0,canvas.width,canvas.height); frame++;
-      if (settings.type === 'fireworks' && frame % Math.max(30, 160-density*20) === 0) burst();
-      particles = particles.filter((p, i) => {
-        if (settings.type === 'fireworks') {
-          p.life = (p.life || 0) + 1; p.x += p.speedX; p.y += p.speedY; p.speedY += .035; p.speedX *= .985;
-          if ((p.life || 0) > (p.maxLife || 60)) return false;
-          ctx.globalAlpha = 1-(p.life || 0)/(p.maxLife || 60);
-        } else if (settings.type === 'sparkles') {
-          p.life = ((p.life || 0)+speed) % (p.maxLife || 100); ctx.globalAlpha = .15 + Math.abs(Math.sin((p.life || 0)/12))*.85;
-        } else {
-          p.y += p.speedY; p.x += settings.type === 'rain' ? p.speedX : Math.sin(p.rotation)*p.speedX; p.rotation += p.rotationSpeed;
-          if (p.y > canvas.height+20) Object.assign(p, createParticle(canvas.width, canvas.height, settings.type, speed, true));
-          ctx.globalAlpha = 1;
-        }
-        ctx.fillStyle = p.color; ctx.strokeStyle = p.color;
-        if (settings.type === 'rain') { ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-3,p.y-16); ctx.stroke(); }
-        else if (settings.type === 'sparkles') { ctx.beginPath(); ctx.moveTo(p.x-p.radius*3,p.y); ctx.lineTo(p.x+p.radius*3,p.y); ctx.moveTo(p.x,p.y-p.radius*3); ctx.lineTo(p.x,p.y+p.radius*3); ctx.stroke(); }
-        else if (settings.type === 'confetti') { ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rotation); ctx.fillRect(-p.radius,-p.radius*2,p.radius*2,p.radius*4); ctx.restore(); }
-        else if (settings.type === 'leaves') { ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rotation); ctx.beginPath(); ctx.ellipse(0,0,p.radius*2,p.radius,0,0,Math.PI*2); ctx.fill(); ctx.restore(); }
-        else { ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill(); }
-        return true;
-      });
-      ctx.globalAlpha = 1; raf = requestAnimationFrame(animate);
-    };
-    resize(); reset(); addEventListener('resize', resize); animate();
-    return () => { removeEventListener('resize', resize); cancelAnimationFrame(raf); };
-  }, [settings]);
-  if (!settings?.enabled) return null;
-  return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-50 h-full w-full" />;
+
+      return { id: index, className, style };
+    });
+  }, [enabled, type, speed, density]);
+
+  if (!enabled) return null;
+
+  return <>
+    <div className="overlay-effects pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+      {particles.map(particle => <span key={particle.id} className={particle.className} style={particle.style} />)}
+    </div>
+    <style>{`
+      .overlay-particle {
+        position: absolute;
+        display: block;
+        pointer-events: none;
+      }
+      .overlay-snow,
+      .overlay-leaves,
+      .overlay-confetti,
+      .overlay-rain {
+        top: -12vh;
+        animation-name: overlay-fall;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+      .overlay-snow {
+        width: var(--particle-size);
+        height: var(--particle-size);
+        border-radius: 999px;
+        background: var(--particle-color);
+      }
+      .overlay-leaves {
+        width: calc(var(--particle-size) * 1.8);
+        height: var(--particle-size);
+        border-radius: 100% 0 100% 0;
+        background: var(--particle-color);
+      }
+      .overlay-confetti {
+        width: var(--particle-size);
+        height: calc(var(--particle-size) * 2.2);
+        background: var(--particle-color);
+      }
+      .overlay-rain {
+        width: 1px;
+        height: 18px;
+        background: rgba(160,205,255,.68);
+        animation-name: overlay-rain-fall;
+      }
+      .overlay-sparkles {
+        top: var(--sparkle-top, 0);
+        width: calc(var(--particle-size) * 5);
+        height: 1px;
+        background: rgba(255,255,255,.85);
+        animation: overlay-twinkle 2s ease-in-out infinite;
+      }
+      .overlay-sparkles::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 1px;
+        height: calc(var(--particle-size) * 5);
+        background: rgba(255,255,255,.85);
+        transform: translate(-50%, -50%);
+      }
+      .overlay-fireworks {
+        width: 3px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--particle-color);
+        animation-name: overlay-burst;
+        animation-timing-function: ease-out;
+        animation-iteration-count: infinite;
+      }
+      @keyframes overlay-fall {
+        from { transform: translate3d(0, -12vh, 0) rotate(0deg); }
+        to { transform: translate3d(var(--drift), 124vh, 0) rotate(540deg); }
+      }
+      @keyframes overlay-rain-fall {
+        from { transform: translate3d(0, -12vh, 0) rotate(12deg); }
+        to { transform: translate3d(var(--drift), 124vh, 0) rotate(12deg); }
+      }
+      @keyframes overlay-twinkle {
+        0%, 100% { opacity: .08; transform: scale(.3); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes overlay-burst {
+        0%, 16% { opacity: 0; transform: translate3d(0,0,0) scale(.4); }
+        18% { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+        42% { opacity: 0; transform: translate3d(var(--burst-x),var(--burst-y),0) scale(.2); }
+        43%, 100% { opacity: 0; transform: translate3d(var(--burst-x),var(--burst-y),0) scale(.2); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .overlay-effects { display: none; }
+      }
+    `}</style>
+  </>;
 };
 
 export default OverlayAnimation;
