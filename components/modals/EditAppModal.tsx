@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppItem, ExternalLink } from '../../types/index.ts';
+import { AppItem, ExternalLink, RichTextBlock } from '../../types/index.ts';
 import Button from '../ui/Button.tsx';
 import Input from '../ui/Input.tsx';
 import Textarea from '../ui/Textarea.tsx';
@@ -7,6 +7,7 @@ import { X, Trash2, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import FilePicker from '../ui/FilePicker.tsx';
 import Portal from '../ui/Portal.tsx';
+import QuillEditor from '../ui/QuillEditor.tsx';
 
 interface EditAppModalProps {
   app: AppItem | null;
@@ -16,6 +17,7 @@ interface EditAppModalProps {
 
 const EditAppModal: React.FC<EditAppModalProps> = ({ app, onClose, onSave }) => {
   const [editedApp, setEditedApp] = useState<AppItem | null>(null);
+  const [description, setDescription] = useState<RichTextBlock[]>([]);
   
   // State for new link inputs
   const [newLinkLabel, setNewLinkLabel] = useState('');
@@ -24,6 +26,7 @@ const EditAppModal: React.FC<EditAppModalProps> = ({ app, onClose, onSave }) => 
   useEffect(() => {
     if (app) {
       setEditedApp(app);
+      setDescription((app.body_richtext || []).filter(block => block.type !== 'image'));
     } else {
       setEditedApp(null);
     }
@@ -64,7 +67,7 @@ const EditAppModal: React.FC<EditAppModalProps> = ({ app, onClose, onSave }) => 
             return;
         }
 
-        onSave(editedApp);
+        onSave({ ...editedApp, body_richtext: description });
         onClose();
     }
   };
@@ -95,10 +98,16 @@ const EditAppModal: React.FC<EditAppModalProps> = ({ app, onClose, onSave }) => 
                 bucket="media"
               />
               <Textarea id="short_desc" name="short_desc" label="Short Description" value={editedApp.short_desc} onChange={(e) => handleGenericChange({ short_desc: e.target.value })} rows={3} />
-              
+
+              <div>
+                  <label className="font-display text-sm text-gray-400 mb-2 block">Full Description</label>
+                  <QuillEditor value={description} onChange={setDescription} />
+              </div>
+
               {/* Links Editor */}
               <div>
-                  <label className="font-display text-sm text-gray-400 mb-2 block">Links</label>
+                  <label className="font-display text-sm text-gray-400 mb-2 block">Expanded Card Button</label>
+                  <p className="mb-3 text-xs text-gray-500">The first link supplies the expanded card's custom button label and destination.</p>
                   
                   {/* List of existing links */}
                   {editedApp.links && editedApp.links.length > 0 && (
@@ -123,10 +132,10 @@ const EditAppModal: React.FC<EditAppModalProps> = ({ app, onClose, onSave }) => 
 
                   {/* Add new link inputs */}
                   <div className="bg-gray-900/50 p-3 border border-gray-800 space-y-3">
-                      <p className="text-[10px] text-gray-500 uppercase font-display">Add New Link</p>
+                      <p className="text-[10px] text-gray-500 uppercase font-display">Add Button</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input 
-                              placeholder="LABEL (e.g. APP STORE)" 
+                              placeholder="BUTTON LABEL (e.g. DOWNLOAD)"
                               value={newLinkLabel}
                               onChange={(e) => setNewLinkLabel(e.target.value)}
                               className="bg-black border border-gray-700 p-2 text-sm text-white focus:border-fba-red focus:outline-none font-mono uppercase"

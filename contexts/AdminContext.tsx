@@ -11,7 +11,7 @@ const defaultSettings: SiteSettings = {
     colors: { bg: '#000000', fg: '#FFFFFF', accent: '#E10600' },
     fonts: { display: 'Press Start 2P', base: 'Inter', ticker: '', tickerSpeed: 20 },
     promo: { enabled: false, image_url: '', link_url: '' },
-    overlay_animation: { enabled: false, type: 'snow' },
+    overlay_animation: { enabled: false, type: 'snow', speed: 3, density: 3 },
     header_overlay_url: null,
     density: 'M'
 };

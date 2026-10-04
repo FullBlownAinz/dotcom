@@ -19,7 +19,8 @@ const LoadingImage: React.FC<LoadingImageProps> = ({
              <img
                 src={src}
                 alt={alt}
-                className={`block transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'} ${className || ''}`}
+                className={`block transition-opacity duration-200 ${isLoading ? 'opacity-0' : 'opacity-100'} ${className || ''}`}
+                decoding="async"
                 onLoad={() => setIsLoading(false)}
                 onError={() => {
                     setIsLoading(false);

@@ -7,7 +7,11 @@ import toast from 'react-hot-toast';
 import { useAdmin } from '../../hooks/useAdmin.ts';
 import SearchModal from '../modals/SearchModal.tsx';
 
-export const Header = () => {
+interface HeaderProps {
+  onHome: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onHome }) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { setEditMode } = useEditMode();
@@ -108,7 +112,7 @@ export const Header = () => {
             </button>
         </div>
 
-        <div className="flex-1 flex justify-center">
+        <button type="button" onClick={onHome} className="flex flex-1 justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-fba-red" aria-label="Return to the top of the homepage">
             <svg viewBox="0 0 100 40" className="h-8" aria-label="FBA Logo">
               <rect width="100" height="40" fill="var(--fba-red)" />
               <text 
@@ -125,7 +129,7 @@ export const Header = () => {
                 FBA
               </text>
             </svg>
-        </div>
+        </button>
 
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
           <div className="relative">

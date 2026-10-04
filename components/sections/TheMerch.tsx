@@ -1,188 +1,103 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useAdmin } from '../../hooks/useAdmin.ts';
 import RichTextViewer from '../ui/RichTextViewer.tsx';
 import { MerchItem } from '../../types/index.ts';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Portal from '../ui/Portal.tsx';
 import LoadingImage from '../ui/LoadingImage.tsx';
 
-interface MerchCardProps {
-    item: MerchItem;
-}
+const parseDescription = (description: string) => {
+  try {
+    const parsed = JSON.parse(description);
+    return Array.isArray(parsed) ? parsed : [{ type: 'paragraph', content: description }];
+  } catch {
+    return description ? [{ type: 'paragraph', content: description }] : [];
+  }
+};
 
-const MerchCard: React.FC<MerchCardProps> = ({ item }) => {
-    // Determine images array
-    const images = item.image_urls && item.image_urls.length > 0 ? item.image_urls : [item.image_url];
-    const [currentImgIdx, setCurrentImgIdx] = useState(0);
-    const [isHovered, setIsHovered] = useState(false);
-    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-    
-    // Parse description safely
-    let descriptionBlocks: any[] = [];
-    try {
-        descriptionBlocks = JSON.parse(item.description);
-        if (!Array.isArray(descriptionBlocks)) {
-            // Fallback if not array
-            descriptionBlocks = [{ type: 'paragraph', content: item.description }];
-        }
-    } catch (e) {
-        descriptionBlocks = [{ type: 'paragraph', content: item.description }];
-    }
+const FittedTitle: React.FC<{ text: string }> = ({ text }) => {
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let size = 18;
+    el.style.fontSize = `${size}px`;
+    while (el.scrollWidth > el.clientWidth && size > 9) el.style.fontSize = `${--size}px`;
+  }, [text]);
+  return <h2 ref={ref} className="overflow-hidden whitespace-nowrap font-display uppercase leading-tight">{text}</h2>;
+};
 
-    // Check if description is effectively empty (handling empty arrays, empty strings, and whitespace-only Quill deltas)
-    const isDescriptionEmpty = !descriptionBlocks.length || (
-        descriptionBlocks.length === 1 && (
-            (descriptionBlocks[0].type === 'paragraph' && (!descriptionBlocks[0].content || !descriptionBlocks[0].content.trim())) ||
-            (descriptionBlocks[0].type === 'quill-delta' && descriptionBlocks[0].delta?.ops?.every((op: any) => typeof op.insert === 'string' && !op.insert.trim()))
-        )
-    );
+const MerchCard: React.FC<{ item: MerchItem }> = ({ item }) => {
+  const images = item.image_urls?.length ? item.image_urls : [item.image_url];
+  const [currentImgIdx, setCurrentImgIdx] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const descriptionBlocks = parseDescription(item.description);
+  const touchStartX = useRef(0);
+  const move = (amount: number) => setCurrentImgIdx(i => (i + amount + images.length) % images.length);
 
-    const nextImage = (e?: React.MouseEvent) => {
-        e?.preventDefault();
-        e?.stopPropagation();
-        setCurrentImgIdx((prev) => (prev + 1) % images.length);
-    };
+  useEffect(() => {
+    const close = () => setIsOpen(false);
+    window.addEventListener('fba:navigate', close);
+    return () => window.removeEventListener('fba:navigate', close);
+  }, []);
 
-    const prevImage = (e?: React.MouseEvent) => {
-        e?.preventDefault();
-        e?.stopPropagation();
-        setCurrentImgIdx((prev) => (prev - 1 + images.length) % images.length);
-    };
-    
-    // Swipe handling
-    const touchStartX = useRef(0);
-    const handleTouchStart = (e: React.TouchEvent) => {
-        touchStartX.current = e.touches[0].clientX;
-    };
-    const handleTouchEnd = (e: React.TouchEvent) => {
-        const touchEndX = e.changedTouches[0].clientX;
-        if (touchStartX.current - touchEndX > 50) nextImage();
-        if (touchEndX - touchStartX.current > 50) prevImage();
-    };
+  const gallery = (
+    <div className="relative h-full w-full overflow-hidden bg-gray-900" onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }} onTouchEnd={e => { const d = touchStartX.current - e.changedTouches[0].clientX; if (Math.abs(d) > 50) move(d > 0 ? 1 : -1); }}>
+      <button type="button" className="h-full w-full cursor-zoom-in" onClick={() => setIsLightboxOpen(true)}>
+        <LoadingImage src={images[currentImgIdx]} alt={`${item.name} ${currentImgIdx + 1}`} containerClassName="h-full w-full" className="h-full w-full object-cover" />
+      </button>
+      {images.length > 1 && <>
+        <button type="button" onClick={() => move(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/60 p-2" aria-label="Previous image"><ChevronLeft /></button>
+        <button type="button" onClick={() => move(1)} className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/60 p-2" aria-label="Next image"><ChevronRight /></button>
+      </>}
+    </div>
+  );
 
-    return (
-        <>
-            <div 
-                id={item.id}
-                className="bg-[#0A0A0A] border border-gray-800 flex flex-col"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                <div 
-                    className="relative w-full h-80 overflow-hidden bg-gray-900 group cursor-zoom-in"
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={handleTouchEnd}
-                    onClick={() => setIsLightboxOpen(true)}
-                >
-                    {/* Slider Container */}
-                    <div 
-                        className="flex h-full w-full transition-transform duration-300 ease-out"
-                        style={{ transform: `translateX(-${currentImgIdx * 100}%)` }}
-                    >
-                        {images.map((img, idx) => (
-                            <LoadingImage 
-                                key={idx} 
-                                src={img} 
-                                alt={`${item.name} ${idx + 1}`}
-                                containerClassName="w-full h-full flex-shrink-0"
-                                className="w-full h-full object-cover"
-                                draggable={false}
-                            />
-                        ))}
-                    </div>
-                    
-                    {/* Navigation Arrows (Always Visible if > 1) */}
-                    {images.length > 1 && (
-                        <>
-                            <button 
-                                onClick={prevImage}
-                                className="absolute left-0 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white hover:bg-black/80 z-10"
-                                aria-label="Previous image"
-                                type="button"
-                            >
-                                <ChevronLeft size={24} />
-                            </button>
-                            <button 
-                                onClick={nextImage}
-                                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white hover:bg-black/80 z-10"
-                                aria-label="Next image"
-                                type="button"
-                            >
-                                <ChevronRight size={24} />
-                            </button>
-                            
-                            {/* Mobile Indicator Dots */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 md:hidden z-10">
-                                {images.map((_, idx) => (
-                                    <div key={idx} className={`w-1.5 h-1.5 rounded-full transition-colors ${idx === currentImgIdx ? 'bg-fba-red' : 'bg-white/50'}`} />
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                <div className="p-4 flex-grow flex flex-col">
-                    <h2 className="font-display uppercase text-lg">{item.name}</h2>
-                    {!item.hide_price && (
-                        <p className="font-mono text-fba-red text-xl my-2">
-                            ${(item.price_cents / 100).toFixed(2)} {item.currency}
-                        </p>
-                    )}
-                    
-                    {!isDescriptionEmpty && (
-                        <div className="flex-grow mb-4 text-sm text-gray-400">
-                            <RichTextViewer blocks={descriptionBlocks} />
-                        </div>
-                    )}
-
-                    <a href={item.external_url} target="_blank" rel="noopener noreferrer" className="mt-auto block text-center w-full px-6 py-2 font-display text-sm uppercase transition-colors bg-fba-red text-fba-white hover:bg-red-700">
-                        {item.button_text || "View on Etsy"}
-                    </a>
-                </div>
-            </div>
-
-            {/* Lightbox Modal */}
-            {isLightboxOpen && (
-                <Portal>
-                    <div 
-                        className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-2 cursor-zoom-out animate-fade-in"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIsLightboxOpen(false);
-                        }}
-                    >
-                        <LoadingImage 
-                            src={images[currentImgIdx]} 
-                            alt={item.name} 
-                            containerClassName="max-w-full max-h-screen"
-                            className="w-full h-auto max-h-screen object-contain shadow-2xl"
-                        />
-                    </div>
-                </Portal>
-            )}
-        </>
-    );
+  return <>
+    <article id={item.id} className={`merch-flip-card ${isOpen ? 'is-open' : ''}`}>
+      <div className="flip-card-inner">
+        <div className="flip-card-face flip-card-front flex cursor-pointer flex-col border border-gray-800 bg-[#0A0A0A]" role="button" tabIndex={0} onClick={() => setIsOpen(true)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(true); } }} aria-label={`More information about ${item.name}`}>
+          <div className="min-h-0 flex-1"><LoadingImage src={images[0]} alt={item.name} containerClassName="h-full w-full" className="h-full w-full object-cover" /></div>
+          <div className="flex-shrink-0 p-4">
+            <FittedTitle text={item.name} />
+            {!item.hide_price && <p className="my-2 font-mono text-xl text-fba-red">${(item.price_cents / 100).toFixed(2)} {item.currency}</p>}
+            <button type="button" onClick={() => setIsOpen(true)} className="mt-2 w-full bg-fba-red px-6 py-2 font-display text-sm uppercase hover:bg-red-700">More Info</button>
+          </div>
+        </div>
+        <div className="flip-card-face flip-card-back flex flex-col border border-fba-red bg-black">
+          <button type="button" onClick={() => setIsOpen(false)} className="absolute right-2 top-2 z-20 rounded-full bg-black/80 p-2" aria-label="Close product details"><X size={20} /></button>
+          <div className="h-1/2 flex-shrink-0">{gallery}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-black p-4 custom-scrollbar [&_.ql-container.ql-snow]:!border-none"><RichTextViewer blocks={descriptionBlocks} /></div>
+          <a href={item.external_url} target="_blank" rel="noopener noreferrer" className="m-4 mt-0 block flex-shrink-0 bg-fba-red px-6 py-2 text-center font-display text-sm uppercase hover:bg-red-700">{item.button_text || 'View on Etsy'}</a>
+        </div>
+      </div>
+    </article>
+    {isLightboxOpen && <Portal><button type="button" className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-2" onClick={() => setIsLightboxOpen(false)} aria-label="Close enlarged image"><LoadingImage src={images[currentImgIdx]} alt={item.name} containerClassName="max-h-screen max-w-full" className="max-h-screen max-w-full object-contain" /></button></Portal>}
+  </>;
 };
 
 const TheMerch = () => {
-    const { merch, loading } = useAdmin();
-
-    const liveMerch = merch.filter(m => !m.hidden);
-
-    if (loading && liveMerch.length === 0) {
-        return <div className="font-display animate-pulse">LOADING MERCH...</div>;
-    }
-
-    return (
-        <div className="w-full h-full overflow-y-auto px-4 py-4 custom-scrollbar">
-            <h1 className="font-display text-2xl text-center uppercase mb-4">THE.MERCH</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                {liveMerch.map(item => (
-                    <MerchCard key={item.id} item={item} />
-                ))}
-            </div>
-        </div>
-    );
+  const { merch, loading } = useAdmin();
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [resetVersion, setResetVersion] = useState(0);
+  const liveMerch = merch.filter(m => !m.hidden);
+  useEffect(() => {
+    const resetWhenLeaving = (event: Event) => {
+      if ((event as CustomEvent<{ sectionId: string }>).detail?.sectionId === 'the-merch') return;
+      carouselRef.current?.scrollTo({ left: 0, behavior: 'auto' });
+      setResetVersion(version => version + 1);
+    };
+    window.addEventListener('fba:active-section', resetWhenLeaving);
+    return () => window.removeEventListener('fba:active-section', resetWhenLeaving);
+  }, []);
+  if (loading && !liveMerch.length) return <div className="font-display animate-pulse">LOADING MERCH...</div>;
+  return <div className="h-full w-full overflow-y-auto px-4 py-4 custom-scrollbar">
+    <h1 className="mb-4 text-center font-display text-2xl uppercase">THE.MERCH</h1>
+    <div ref={carouselRef} className="mx-auto flex max-w-6xl snap-x snap-mandatory gap-6 overflow-x-auto pb-4 custom-scrollbar">
+      {liveMerch.map(item => <div key={`${item.id}-${resetVersion}`} className="w-[min(82vw,22rem)] flex-none snap-center"><MerchCard item={item} /></div>)}
+    </div>
+  </div>;
 };
 
 export default TheMerch;

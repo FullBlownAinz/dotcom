@@ -72,27 +72,108 @@
       .hatch-inner-shadow {
         box-shadow: inset 0 6px 12px 0 rgba(0,0,0,0.4);
       }
+      .flip-card {
+        height: min(72vw, 35rem);
+        min-height: 18rem;
+        transition: height 420ms ease;
+      }
+      .flip-card.is-flipped,
+      .flip-card.is-animating { perspective: 1400px; }
+      .flip-card.is-expanded { height: min(calc(100dvh - 9rem), 50rem); }
+      .scrl-carousel {
+        height: min(72vw, 35rem);
+        min-height: 18rem;
+        transition: height 420ms ease;
+      }
+      .scrl-carousel.is-open { height: min(calc(100dvh - 9rem), 50rem); }
+      .flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: flat;
+      }
+      .flip-card.is-flipped .flip-card-inner,
+      .flip-card.is-animating .flip-card-inner {
+        transform-style: preserve-3d;
+        transition: transform 520ms cubic-bezier(.2,.7,.2,1);
+      }
+      .flip-card.is-flipped .flip-card-face,
+      .flip-card.is-animating .flip-card-face {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .flip-card.is-flipped .flip-card-inner { transform: rotateY(-180deg); }
+      .flip-card-face {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .flip-card-back { transform: rotateY(180deg); visibility: hidden; }
+      .flip-card.is-flipped .flip-card-back,
+      .flip-card.is-animating .flip-card-back { visibility: visible; }
+      .merch-flip-card { height: min(calc(100dvh - 10rem), 38rem); perspective: 1400px; }
+      .merch-flip-card .flip-card-inner {
+        transform-style: preserve-3d;
+        transition: transform 520ms cubic-bezier(.2,.7,.2,1);
+      }
+      .merch-flip-card .flip-card-face {
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+      .merch-flip-card .flip-card-back { visibility: visible; }
+      .merch-flip-card.is-open .flip-card-inner { transform: rotateY(-180deg); }
+      .app-list { display: flex; flex-direction: column; }
+      .app-page { display: contents; }
+      @media (min-width: 768px) {
+        .app-list { gap: 1.5rem; }
+      }
+      @media (max-width: 767px) {
+        .mobile-content-offset { padding-left: 1rem; }
+        .flip-card { height: min(calc(100vw - 3.5rem), 32rem); }
+        .flip-card.is-expanded { height: min(calc(100dvh - 9rem), 46rem); }
+        .scrl-carousel { height: min(calc(100vw - 3.5rem), 32rem); }
+        .scrl-carousel.is-open { height: min(calc(100dvh - 9rem), 46rem); }
+        .app-list { padding-bottom: max(18rem, calc(100dvh - 30rem)); }
+        .app-page {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          min-height: 29.5rem;
+          padding-bottom: 1rem;
+          scroll-margin-top: 3.5rem;
+          scroll-snap-align: start;
+          scroll-snap-stop: always;
+        }
+      }
 
       /* Custom Scrollbar Styles */
       .custom-scrollbar::-webkit-scrollbar {
         width: 12px;
       }
+      *::-webkit-scrollbar-track,
       .custom-scrollbar::-webkit-scrollbar-track {
         background: var(--fba-black);
       }
+      *::-webkit-scrollbar-thumb,
       .custom-scrollbar::-webkit-scrollbar-thumb {
         background-color: var(--fba-red);
         border-radius: 20px;
         border: 3px solid var(--fba-black);
       }
+      *::-webkit-scrollbar-button,
       .custom-scrollbar::-webkit-scrollbar-button {
-        display: none;
+        display: block;
+        width: 10px;
+        height: 10px;
+        background-color: var(--fba-red);
       }
       /* For Firefox */
       .custom-scrollbar {
         scrollbar-width: thin;
         scrollbar-color: var(--fba-red) var(--fba-black);
       }
+      * { scrollbar-color: var(--fba-red) var(--fba-black); }
 
       /* Quill Editor Styles */
       .ql-editor {

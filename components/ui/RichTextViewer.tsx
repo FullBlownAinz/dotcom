@@ -52,8 +52,17 @@ const RichTextViewer: React.FC<RichTextViewerProps> = ({ blocks }) => {
                         return <ul key={index} className="list-disc list-inside">{block.items?.map((item, i) => <li key={i}>{item}</li>)}</ul>;
                     case 'image':
                         return <img key={index} src={block.src} alt={block.alt || ''} className="max-w-full h-auto rounded-md" />;
+                    case 'linked-image':
+                        return (
+                            <a key={index} href={block.url || '#'} target="_blank" rel="noopener noreferrer" className="block leading-none">
+                                <img src={block.src} alt={block.alt || ''} className="block w-full h-auto" />
+                            </a>
+                        );
                     case 'video':
                          return <video key={index} src={block.src} controls className="max-w-full h-auto rounded-md" />;
+                    case 'embed':
+                        if (block.src) return <iframe key={index} src={block.src} title={block.alt || `Embedded content ${index + 1}`} className="aspect-video w-full border-0" loading="lazy" allowFullScreen />;
+                        return block.content ? <div key={index} dangerouslySetInnerHTML={{ __html: block.content }} /> : null;
                     default:
                         return null;
                 }

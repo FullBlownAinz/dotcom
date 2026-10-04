@@ -1,211 +1,167 @@
-
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { SiteSettings } from '../../types/index.ts';
 
-interface OverlayAnimationProps {
-    settings?: SiteSettings['overlay_animation'];
-}
+interface OverlayAnimationProps { settings?: SiteSettings['overlay_animation']; }
+type ParticleStyle = React.CSSProperties & Record<`--${string}`, string | number>;
 
-interface Particle {
-    x: number;
-    y: number;
-    radius: number;
-    color: string;
-    speedX: number;
-    speedY: number;
-    rotation: number;
-    rotationSpeed: number;
-}
+const palette = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#ffffff', '#e10600'];
+const leafPalette = ['#e9c46a', '#f4a261', '#e76f51', '#2a9d8f'];
 
-const OverlayAnimation: React.FC<OverlayAnimationProps> = ({ settings }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const animationFrameId = useRef<number>();
-    const particles = useRef<Particle[]>([]);
-
-    // Performance Optimization: Render the heart emoji once to an offscreen canvas
-    // instead of calling fillText (which is expensive) on every frame for every particle.
-    const heartBuffer = useMemo(() => {
-        if (settings?.type !== 'broken-hearts') return null;
-        
-        const canvas = document.createElement('canvas');
-        const size = 64; // Use a fixed decent resolution
-        canvas.width = size;
-        canvas.height = size;
-        
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-            ctx.font = `${size * 0.8}px serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            // Slight Y adjustment to center the emoji vertically
-            ctx.fillText('💔', size / 2, size / 2 + (size * 0.1));
-        }
-        return canvas;
-    }, [settings?.type]);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || !settings?.enabled) {
-            if (canvas) {
-                const ctx = canvas.getContext('2d');
-                ctx?.clearRect(0, 0, canvas.width, canvas.height);
-            }
-            if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-            return;
-        }
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // Resize handler
-        const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initParticles();
-        };
-        window.addEventListener('resize', resize);
-        
-        // Set initial size
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // Initialize particles
-        const initParticles = () => {
-            const isMobile = window.innerWidth < 768;
-            // Reduce count slightly for performance while maintaining density feel
-            const count = isMobile ? 15 : 30; 
-            particles.current = [];
-            for (let i = 0; i < count; i++) {
-                particles.current.push(createParticle(canvas.width, canvas.height, settings.type));
-            }
-        };
-        initParticles();
-
-        // Animation Loop
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const isBrokenHearts = settings.type === 'broken-hearts' && heartBuffer;
-
-            particles.current.forEach((p, i) => {
-                // Update Physics
-                p.y += p.speedY;
-                p.x += Math.sin(p.rotation) * p.speedX; 
-                p.rotation += p.rotationSpeed;
-
-                // Reset if out of bounds (bottom)
-                // Use a larger buffer (100) to ensure they clear screen before respawning
-                if (p.y > canvas.height + 100) { 
-                    particles.current[i] = createParticle(canvas.width, canvas.height, settings.type, true);
-                }
-
-                // Drawing
-                // Use setTransform instead of save/restore for better performance in the loop
-                if (isBrokenHearts) {
-                    const size = p.radius * 2;
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(p.rotation);
-                    ctx.drawImage(heartBuffer!, -p.radius, -p.radius, size, size);
-                    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset identity
-                } else {
-                    // Fallback for shapes
-                    ctx.save();
-                    ctx.translate(p.x, p.y);
-                    
-                    // Snow doesn't need rotation, optimization
-                    if (settings.type !== 'snow') {
-                        ctx.rotate(p.rotation);
-                    }
-
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-
-                    if (settings.type === 'confetti') {
-                        ctx.fillRect(-p.radius, -p.radius * 2, p.radius * 2, p.radius * 4);
-                    } else if (settings.type === 'leaves') {
-                        ctx.ellipse(0, 0, p.radius * 2, p.radius, 0, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else {
-                        // Snow
-                        ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    ctx.restore();
-                }
-            });
-
-            animationFrameId.current = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            if (animationFrameId.current) cancelAnimationFrame(animationFrameId.current);
-        };
-    }, [settings, heartBuffer]);
-
-    if (!settings?.enabled) return null;
-
-    return (
-        <canvas
-            ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-50 w-full h-full"
-        />
-    );
+const random = (seed: number) => {
+  const value = Math.sin(seed * 999.91) * 43758.5453;
+  return value - Math.floor(value);
 };
 
-const createParticle = (w: number, h: number, type: string, top: boolean = false): Particle => {
-    const x = Math.random() * w;
-    const y = top ? -100 : Math.random() * h; // Start higher up (-100) to ensure smooth entry
-    
-    if (type === 'snow') {
-        return {
-            x, y,
-            radius: Math.random() * 2 + 1,
-            color: `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.3})`,
-            speedY: Math.random() * 1 + 0.5,
-            speedX: Math.random() * 0.5,
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: Math.random() * 0.02
-        };
-    } else if (type === 'leaves') {
-        const colors = ['#e9c46a', '#f4a261', '#e76f51', '#2a9d8f'];
-        return {
-            x, y,
-            radius: Math.random() * 3 + 3,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            speedY: Math.random() * 1.5 + 1,
-            speedX: Math.random() * 1,
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: Math.random() * 0.05 - 0.025
-        };
-    } else if (type === 'broken-hearts') {
-        return {
-            x, y,
-            // 25% smaller than original roughly 20-50 range. Now roughly 11-26 radius.
-            radius: (Math.random() * 15 + 10) * 0.75, 
-            color: '#000000', 
-            // Slower fall speed: 1.5 to 3.0 pixels per frame (Reduced from 2.5-4.5)
-            speedY: Math.random() * 1.5 + 1.5, 
-            // Reduced sway for smoother look
-            speedX: Math.random() * 0.5 - 0.25,
-            rotation: Math.random() * Math.PI * 2,
-            // Slower, consistent rotation
-            rotationSpeed: Math.random() * 0.02 - 0.01 
-        };
-    } else { // confetti
-        const colors = ['#ef476f', '#ffd166', '#06d6a0', '#118ab2', '#073b4c', '#ffffff'];
-        return {
-            x, y,
-            radius: Math.random() * 2 + 2,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            speedY: Math.random() * 3 + 2,
-            speedX: Math.random() * 2,
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: Math.random() * 0.1
-        };
-    }
+const OverlayAnimation: React.FC<OverlayAnimationProps> = ({ settings }) => {
+  const enabled = settings?.enabled ?? false;
+  const type = settings?.type ?? 'snow';
+  const speed = settings?.speed ?? 3;
+  const density = settings?.density ?? 3;
+
+  const particles = useMemo(() => {
+    if (!enabled) return [];
+    const isFireworks = type === 'fireworks';
+    const count = isFireworks ? Math.max(24, density * 18) : Math.max(10, density * 14);
+    const velocity = .55 + speed * .16;
+
+    return Array.from({ length: count }, (_, index) => {
+      const r1 = random(index + 1);
+      const r2 = random(index + 101);
+      const r3 = random(index + 211);
+      const r4 = random(index + 307);
+      const r5 = random(index + 401);
+      let className = `overlay-particle overlay-${type}`;
+      const style: ParticleStyle = {
+        left: `${r1 * 100}%`,
+        animationDelay: `${-r2 * (8 / velocity)}s`,
+      };
+
+      if (isFireworks) {
+        const burstSize = Math.max(12, density * 6);
+        const burstIndex = Math.floor(index / burstSize);
+        const particleIndex = index % burstSize;
+        const angle = (Math.PI * 2 * particleIndex) / burstSize;
+        const distance = 45 + r3 * 95;
+        style.left = `${15 + random(burstIndex + 33) * 70}%`;
+        style.top = `${12 + random(burstIndex + 71) * 45}%`;
+        style['--burst-x'] = `${Math.cos(angle) * distance}px`;
+        style['--burst-y'] = `${Math.sin(angle) * distance}px`;
+        style['--particle-color'] = palette[Math.floor(r4 * palette.length)];
+        style.animationDuration = `${Math.max(2.8, 7.2 / velocity)}s`;
+        style.animationDelay = `${-(burstIndex * 1.35 + r5 * 2)}s`;
+      } else if (type === 'sparkles') {
+        style.top = `${r2 * 100}%`;
+        style['--particle-size'] = `${2 + r3 * 3}px`;
+        style.animationDuration = `${Math.max(.7, 2.8 / velocity)}s`;
+      } else {
+        style['--drift'] = `${(r3 - .5) * (type === 'rain' ? 45 : 140)}px`;
+        style['--particle-size'] = `${type === 'leaves' ? 6 + r4 * 7 : type === 'confetti' ? 4 + r4 * 5 : 2 + r4 * 4}px`;
+        style['--particle-color'] = type === 'leaves'
+          ? leafPalette[Math.floor(r5 * leafPalette.length)]
+          : type === 'confetti'
+            ? palette[Math.floor(r5 * palette.length)]
+            : `rgba(255,255,255,${.3 + r5 * .55})`;
+        const baseDuration = type === 'rain' ? 2.2 : type === 'confetti' ? 5.5 : type === 'leaves' ? 7.5 : 9;
+        style.animationDuration = `${baseDuration / velocity}s`;
+      }
+
+      return { id: index, className, style };
+    });
+  }, [enabled, type, speed, density]);
+
+  if (!enabled) return null;
+
+  return <>
+    <div className="overlay-effects pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
+      {particles.map(particle => <span key={particle.id} className={particle.className} style={particle.style} />)}
+    </div>
+    <style>{`
+      .overlay-particle {
+        position: absolute;
+        display: block;
+        pointer-events: none;
+      }
+      .overlay-snow,
+      .overlay-leaves,
+      .overlay-confetti,
+      .overlay-rain {
+        top: -12vh;
+        animation-name: overlay-fall;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+      }
+      .overlay-snow {
+        width: var(--particle-size);
+        height: var(--particle-size);
+        border-radius: 999px;
+        background: var(--particle-color);
+      }
+      .overlay-leaves {
+        width: calc(var(--particle-size) * 1.8);
+        height: var(--particle-size);
+        border-radius: 100% 0 100% 0;
+        background: var(--particle-color);
+      }
+      .overlay-confetti {
+        width: var(--particle-size);
+        height: calc(var(--particle-size) * 2.2);
+        background: var(--particle-color);
+      }
+      .overlay-rain {
+        width: 1px;
+        height: 18px;
+        background: rgba(160,205,255,.68);
+        animation-name: overlay-rain-fall;
+      }
+      .overlay-sparkles {
+        top: var(--sparkle-top, 0);
+        width: calc(var(--particle-size) * 5);
+        height: 1px;
+        background: rgba(255,255,255,.85);
+        animation: overlay-twinkle 2s ease-in-out infinite;
+      }
+      .overlay-sparkles::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 1px;
+        height: calc(var(--particle-size) * 5);
+        background: rgba(255,255,255,.85);
+        transform: translate(-50%, -50%);
+      }
+      .overlay-fireworks {
+        width: 3px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--particle-color);
+        animation-name: overlay-burst;
+        animation-timing-function: ease-out;
+        animation-iteration-count: infinite;
+      }
+      @keyframes overlay-fall {
+        from { transform: translate3d(0, -12vh, 0) rotate(0deg); }
+        to { transform: translate3d(var(--drift), 124vh, 0) rotate(540deg); }
+      }
+      @keyframes overlay-rain-fall {
+        from { transform: translate3d(0, -12vh, 0) rotate(12deg); }
+        to { transform: translate3d(var(--drift), 124vh, 0) rotate(12deg); }
+      }
+      @keyframes overlay-twinkle {
+        0%, 100% { opacity: .08; transform: scale(.3); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+      @keyframes overlay-burst {
+        0%, 16% { opacity: 0; transform: translate3d(0,0,0) scale(.4); }
+        18% { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+        42% { opacity: 0; transform: translate3d(var(--burst-x),var(--burst-y),0) scale(.2); }
+        43%, 100% { opacity: 0; transform: translate3d(var(--burst-x),var(--burst-y),0) scale(.2); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .overlay-effects { display: none; }
+      }
+    `}</style>
+  </>;
 };
 
 export default OverlayAnimation;
