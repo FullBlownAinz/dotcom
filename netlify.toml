@@ -1,0 +1,53 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# FBA.LINK remains its own application. These rewrites mount it beneath the
+# parent domain without replacing or rebuilding the FullBlownAinz homepage.
+[[redirects]]
+  from = "/link"
+  to = "https://fba-link.netlify.app/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/link/*"
+  to = "https://fba-link.netlify.app/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/smoshomatic"
+  to = "https://fbasmoshomatic.netlify.app/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/smoshomatic/*"
+  to = "https://fbasmoshomatic.netlify.app/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/trekomatic"
+  to = "https://fbatrekomatic.netlify.app/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/trekomatic/*"
+  to = "https://fbatrekomatic.netlify.app/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/thronesomatic"
+  to = "https://fbathronesomatic.netlify.app/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/thronesomatic/*"
+  to = "https://fbathronesomatic.netlify.app/:splat"
+  status = 200
+  force = true
