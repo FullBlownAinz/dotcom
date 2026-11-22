@@ -1,6 +1,29 @@
+"$schema" = "https://open-api.netlify.com/netlify.schema.json"
+
 [build]
   command = "npm run build"
   publish = "dist"
+
+# Mount the existing 2027 one-pager at the parent domain. The source page
+# references these two hashed assets from /assets, so they are proxied by
+# exact name without affecting the hub's own hashed Vite assets.
+[[redirects]]
+  from = "/one-pager-2027"
+  to = "https://one-pager-2026.netlify.app/"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/assets/index-2fQjz_Yi.js"
+  to = "https://one-pager-2026.netlify.app/assets/index-2fQjz_Yi.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/assets/index-CXKt1C9Y.css"
+  to = "https://one-pager-2026.netlify.app/assets/index-CXKt1C9Y.css"
+  status = 200
+  force = true
 
 # FBA.LINK remains its own application. These rewrites mount it beneath the
 # parent domain without replacing or rebuilding the FullBlownAinz homepage.
