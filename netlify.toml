@@ -25,6 +25,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/media/*"
+  to = "https://one-pager-2026.netlify.app/media/:splat"
+  status = 200
+  force = true
+
 # FBA.LINK remains its own application. These rewrites mount it beneath the
 # parent domain without replacing or rebuilding the FullBlownAinz homepage.
 [[redirects]]
